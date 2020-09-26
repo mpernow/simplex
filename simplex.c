@@ -259,12 +259,11 @@ void compare(int *best, int *second, int *worst, double *xi2_arr, int d)
 
 
 
-int main()
+int run_simplex(int d)
 {
 	double **points_arr;
-	int d, i, j;
+	int i, j;
 	FILE *fp;
-	d = 29;
 	double current[d];
 	double tmp;
 	double *xi2_arr;
