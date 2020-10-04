@@ -13,29 +13,29 @@ Header file for the simplex library.
 // Cost function
 // ----------------------------------
 
-
+typedef int (*func)(int, double*);
 
 
 // Nelder--Mead algorithm
 // ----------------------------------
-int run_simplex(int d);
+int run_simplex(int, double*, func);
 
 
 
 // Utility functions
 // --------------------------------
 
-double **init_simplex(int d);
+double **init_simplex(int);
 
-void xisq(int d, double **points_arr, double *current, double *xi2_arr);
+void xisq(func, int, double**, double*, double*);
 
-void update_simplex(int d, double *xisq_vec, int best, int second, int worst, double *current, double **points_arr);
+void update_simplex(int, double*, int, int, int, double*, double**, func);
 
-int max_index(double *arr, int len);
+int max_index(double*, int);
 
-int min_index(double *arr, int len);
+int min_index(double*, int);
 
-void compare(int *best, int *second, int *worst, double *xi2_arr, int d);
+void compare(int*, int*, int*, double*, int);
 
 
 #endif // SIMPLEX_H_

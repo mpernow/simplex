@@ -12,7 +12,6 @@ Date: 2018-10-04
 
 #include <stdlib.h>
 #include <stdio.h>
-#include "RGrunner.h"
 
 
 double **init_simplex(int d)
@@ -49,7 +48,7 @@ double **init_simplex(int d)
 	return points_arr;
 }
 
-void xisq(int d, double **points_arr, double *current, double *xi2_arr)
+void xisq(func cost_func, int d, double **points_arr, double *current, double *xi2_arr, func cost_func)
 {
 	// Calculate the xi2 for each of the d+1 points in the simplex
 
@@ -62,11 +61,11 @@ void xisq(int d, double **points_arr, double *current, double *xi2_arr)
 		{
 			temp[j] = points_arr[i][j] * current[j];
 		}
-		xi2_arr[i] = xisquare(temp);
+		xi2_arr[i] = cost_func(d, temp);
 	}
 }
 
-void update_simplex(int d, double *xisq_vec, int best, int second, int worst, double *current, double **points_arr)
+void update_simplex(int d, double *xisq_vec, int best, int second, int worst, double *current, double **points_arr, func cost_func)
 {
 	// Updates the simplex to the next generation
 	int i, j;
@@ -97,7 +96,7 @@ void update_simplex(int d, double *xisq_vec, int best, int second, int worst, do
 		x_r[i] = 2.0*x_av[i] - x_w[i];
 		temp[i] = x_r[i] * current[i];
 	}
-	xisq_r = xisquare(temp);
+	xisq_r = cost_func(d, temp);
 
 	if (xisq_r < xisq_vec[worst])
 	{
@@ -122,7 +121,7 @@ void update_simplex(int d, double *xisq_vec, int best, int second, int worst, do
 					x_e[i] = 2.0 * x_r[i] - x_av[i];
 					temp[i] = x_e[i] * current[i];
 				}
-				xisq_e = xisquare(temp);
+				xisq_e = cost_func(d, temp);
 				if (xisq_e < xisq_vec[best])
 				{
 					// This is now best
@@ -153,7 +152,7 @@ void update_simplex(int d, double *xisq_vec, int best, int second, int worst, do
 				x_new[i] = x_r[i] - 0.5 * (x_r[i] - x_av[i]);
 				temp[i] = x_new[i] * current[i];
 			}
-			xisq_new = xisquare(temp);
+			xisq_new = cost_func(d, temp);
 		}
 		// Do the replacement
 		for (i = 0; i < d; i++)
@@ -171,7 +170,7 @@ void update_simplex(int d, double *xisq_vec, int best, int second, int worst, do
 			x_c[i] = x_av[i] - 0.5*(x_av[i] + x_w[i]);
 			temp[i] = x_c[i] * current[i];
 		}
-		xisq_c = xisquare(temp);
+		xisq_c = cost_func(d, temp);
 		if (xisq_c < xisq_vec[worst])
 		{
 			// Successful contraction
@@ -194,7 +193,7 @@ void update_simplex(int d, double *xisq_vec, int best, int second, int worst, do
 					}
 				}
 			}
-			xisq(d, points_arr, current, xisq_vec);
+			xisq(cost_func, d, points_arr, current, xisq_vec);
 		}
 	}
 
@@ -259,7 +258,7 @@ void compare(int *best, int *second, int *worst, double *xi2_arr, int d)
 
 
 
-int run_simplex(int d)
+int run_simplex(int d, double* start_point, func cost_func)
 {
 	double **points_arr;
 	int i, j;
@@ -270,53 +269,45 @@ int run_simplex(int d)
 	int best, second, worst;
 	xi2_arr = calloc(d + 1, sizeof(double));
 
-	for (j = 0; j < 1000; j++)
+	for (i = 0; i < d; i++)
 	{
-		// Read current best point from file "point.dat"
-		fp = fopen("point.dat", "r");
-		int line = 0;
-		while (fscanf(fp, "%lf", &tmp) != EOF)
-		{
-			current[line] = tmp;
-			line += 1;
-			printf("%e\n", tmp);
-		}
-		
-		fclose(fp);
-
-		points_arr = init_simplex(d);
-
-		xisq(d, points_arr, current, xi2_arr);
-		compare(&best, &second, &worst, xi2_arr, d);
-		
-		for (i = 0; i < 500; i++)
-		{
-			update_simplex(d, xi2_arr, best, second, worst, current, points_arr);
-			compare(&best, &second, &worst, xi2_arr, d);
-			if (i % 10 == 0)
-			{
-				printf("%.10f\n", xi2_arr[best]);
-			}
-		}
-
-		fp = fopen("point.dat", "w");
-		for (i = 0; i < d; i++)
-		{
-			fprintf(fp, "%.10e\n", points_arr[best][i] * current[i]);
-		}
-		fclose(fp);
-
-		for (i = 0; i < d; i++)
-		{
-			//printf("%e\n", points_arr[best][i] * current[i]);
-		}
-
-		for (i = 0; i < d + 1; i++)
-		{
-			free(points_arr[i]);
-		}
-		free(points_arr);
+		current[i] = start_point[i];
 	}
+	
+
+	points_arr = init_simplex(d);
+    
+    // Ugly: call to cost_func scattered around this file
+	xisq(cost_func, d, points_arr, current, xi2_arr);
+	compare(&best, &second, &worst, xi2_arr, d);
+	
+	for (i = 0; i < 500; i++)
+	{
+		update_simplex(d, xi2_arr, best, second, worst, current, points_arr);
+		compare(&best, &second, &worst, xi2_arr, d);
+		if (i % 10 == 0)
+		{
+			printf("%.10f\n", xi2_arr[best]);
+		}
+	}
+
+	fp = fopen("point.dat", "w");
+	for (i = 0; i < d; i++)
+	{
+		fprintf(fp, "%.10e\n", points_arr[best][i] * current[i]);
+	}
+	fclose(fp);
+
+	for (i = 0; i < d; i++)
+	{
+		//printf("%e\n", points_arr[best][i] * current[i]);
+	}
+
+	for (i = 0; i < d + 1; i++)
+	{
+		free(points_arr[i]);
+	}
+	free(points_arr);
 
 	free(xi2_arr);
 	return 0;
