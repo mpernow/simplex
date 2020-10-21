@@ -13,6 +13,7 @@ Date: 2018-10-04
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "simplex.h"
 
 double **init_simplex(int d)
 {
@@ -48,7 +49,7 @@ double **init_simplex(int d)
 	return points_arr;
 }
 
-void xisq(func cost_func, int d, double **points_arr, double *current, double *xi2_arr, func cost_func)
+void xisq(func cost_func, int d, double **points_arr, double *current, double *xi2_arr)
 {
 	// Calculate the xi2 for each of the d+1 points in the simplex
 
@@ -258,13 +259,11 @@ void compare(int *best, int *second, int *worst, double *xi2_arr, int d)
 
 
 
-int run_simplex(int d, double* start_point, func cost_func)
+int run_simplex(int d, double* start_point, double* final_point, func cost_func, int num_iter)
 {
 	double **points_arr;
-	int i, j;
-	FILE *fp;
+	int i;
 	double current[d];
-	double tmp;
 	double *xi2_arr;
 	int best, second, worst;
 	xi2_arr = calloc(d + 1, sizeof(double));
@@ -274,35 +273,37 @@ int run_simplex(int d, double* start_point, func cost_func)
 		current[i] = start_point[i];
 	}
 	
-
+    // Issue: the initialisation is such that if any 
+    // element of array is zero, it will remain zero
 	points_arr = init_simplex(d);
     
-    // Ugly: call to cost_func scattered around this file
+    // Ugly implementation: call to cost_func scattered around this file
 	xisq(cost_func, d, points_arr, current, xi2_arr);
 	compare(&best, &second, &worst, xi2_arr, d);
-	
-	for (i = 0; i < 500; i++)
+
+
+    // Run num_iter generations
+	for (i = 0; i < num_iter; i++)
 	{
-		update_simplex(d, xi2_arr, best, second, worst, current, points_arr);
+		update_simplex(d, xi2_arr, best, second, worst, current, points_arr, cost_func);
 		compare(&best, &second, &worst, xi2_arr, d);
-		if (i % 10 == 0)
-		{
-			printf("%.10f\n", xi2_arr[best]);
-		}
+		//if (i % 10 == 0) // Print after each generation
+		//{
+        //    // Print the best xi2
+		//	printf("%.10f\n", xi2_arr[best]);
+        //    // Print the best point
+        //    for (int j = 0; j < d; j++)
+        //    {
+        //        printf("%f\t", points_arr[best][j]*current[j]);
+        //    }
+        //    printf("\n");
+		//}
 	}
 
-	fp = fopen("point.dat", "w");
 	for (i = 0; i < d; i++)
 	{
-		fprintf(fp, "%.10e\n", points_arr[best][i] * current[i]);
+        final_point[i] = points_arr[best][i] * current[i];
 	}
-	fclose(fp);
-
-	for (i = 0; i < d; i++)
-	{
-		//printf("%e\n", points_arr[best][i] * current[i]);
-	}
-
 	for (i = 0; i < d + 1; i++)
 	{
 		free(points_arr[i]);

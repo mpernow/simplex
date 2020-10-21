@@ -13,12 +13,12 @@ Header file for the simplex library.
 // Cost function
 // ----------------------------------
 
-typedef int (*func)(int, double*);
+typedef double (*func)(int, double*);
 
 
 // Nelder--Mead algorithm
 // ----------------------------------
-int run_simplex(int, double*, func);
+int run_simplex(int, double*, double*, func, int);
 
 
 
