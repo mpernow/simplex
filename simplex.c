@@ -94,7 +94,7 @@ void update_simplex(int d, double *xisq_vec, int best, int second, int worst, do
 	// Reflect worst point about x_av
 	for (i = 0; i < d; i++)
 	{
-		x_r[i] = 2.0*x_av[i] - x_w[i];
+		x_r[i] = (1.0 + ALPHA)*x_av[i] - ALPHA * x_w[i];
 		temp[i] = x_r[i];
 	}
 	xisq_r = cost_func(d, temp);
@@ -119,7 +119,7 @@ void update_simplex(int d, double *xisq_vec, int best, int second, int worst, do
 				// Extend further
 				for (i = 0; i < d; i++)
 				{
-					x_e[i] = 2.0 * x_r[i] - x_av[i];
+					x_e[i] = GAMMA * x_r[i] + (1.0 - GAMMA) * x_av[i];
 					temp[i] = x_e[i];
 				}
 				xisq_e = cost_func(d, temp);
@@ -150,7 +150,7 @@ void update_simplex(int d, double *xisq_vec, int best, int second, int worst, do
 			// Contract back towards x_av
 			for (i = 0; i < d; i++)
 			{
-				x_new[i] = x_r[i] - 0.5 * (x_r[i] - x_av[i]);
+				x_new[i] = RHO * x_av[i] + (1.0 - RHO) * x_r[i];
 				temp[i] = x_new[i];
 			}
 			xisq_new = cost_func(d, temp);
@@ -168,7 +168,7 @@ void update_simplex(int d, double *xisq_vec, int best, int second, int worst, do
 		// Contract inside simplex
 		for (i = 0; i < d; i++)
 		{
-			x_c[i] = x_av[i] - 0.5*(x_av[i] + x_w[i]);
+			x_c[i] = RHO * x_av[i] + (1.0 - RHO) * x_w[i];
 			temp[i] = x_c[i];
 		}
 		xisq_c = cost_func(d, temp);
@@ -190,7 +190,7 @@ void update_simplex(int d, double *xisq_vec, int best, int second, int worst, do
 				{
 					for (i = 0; i < d; i++)
 					{
-						points_arr[j][i] = 0.5*(points_arr[j][i] + points_arr[best][i]);
+						points_arr[j][i] = points_arr[best][i] + SIGMA * (points_arr[j][i] - points_arr[best][i]);
 					}
 				}
 			}

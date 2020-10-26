@@ -8,7 +8,14 @@ Header file for the simplex library.
 // Definitions
 // -----------------------------------
 
-// Here will go a bunch of parameter definitions of the algorithm
+// Parameter for reflection about centroid
+#define ALPHA 1.0
+// Parameter for further expansion (greater than 1)
+#define GAMMA 1.5
+// Parameter for contraction
+#define RHO 0.5
+// Parameter for shrinking
+#define SIGMA 0.5
 
 // Cost function
 // ----------------------------------
