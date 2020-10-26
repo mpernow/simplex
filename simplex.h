@@ -25,11 +25,11 @@ int run_simplex(int, double*, double*, func, int);
 // Utility functions
 // --------------------------------
 
-double **init_simplex(int);
+double **init_simplex(int, double*);
 
-void xisq(func, int, double**, double*, double*);
+void xisq(func, int, double**, double*);
 
-void update_simplex(int, double*, int, int, int, double*, double**, func);
+void update_simplex(int, double*, int, int, int, double**, func);
 
 int max_index(double*, int);
 

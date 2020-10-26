@@ -15,7 +15,7 @@ Date: 2018-10-04
 
 #include "simplex.h"
 
-double **init_simplex(int d)
+double **init_simplex(int d, double* current)
 {
 	// Initialise simplex of d + 1 points in d dimensions:
 	// (1 		1 		1 		1 ...
@@ -23,11 +23,11 @@ double **init_simplex(int d)
 	//  1		1+length	1		1 ...
 	//  1		1		1 + length	1 ...
 	//  ...		...		...		....)
-
+    //  where each element is multiplied by the corresponding current
 
 
 	int i, j;
-	double length = 1e-2; // start with 1% deviation
+	double length = 0.05; // start with 5% deviation
 
 	double **points_arr = calloc(d + 1, sizeof(double*));
 	for (i = 0; i < d + 1; i++)
@@ -37,11 +37,11 @@ double **init_simplex(int d)
 		{
 			if (i > 0 && i - 1 == j)
 			{
-				points_arr[i][j] = 1.0 + length;
+				points_arr[i][j] = current[j] != 0 ? (1.0 + length) * current[j] : 0.00025;
 			}
 			else
 			{
-				points_arr[i][j] = 1.0;
+				points_arr[i][j] = current[j];
 			}
 		}
 	}
@@ -49,7 +49,7 @@ double **init_simplex(int d)
 	return points_arr;
 }
 
-void xisq(func cost_func, int d, double **points_arr, double *current, double *xi2_arr)
+void xisq(func cost_func, int d, double **points_arr, double *xi2_arr)
 {
 	// Calculate the xi2 for each of the d+1 points in the simplex
 
@@ -60,13 +60,13 @@ void xisq(func cost_func, int d, double **points_arr, double *current, double *x
 	{
 		for (j = 0; j < d; j++)
 		{
-			temp[j] = points_arr[i][j] * current[j];
+			temp[j] = points_arr[i][j];
 		}
 		xi2_arr[i] = cost_func(d, temp);
 	}
 }
 
-void update_simplex(int d, double *xisq_vec, int best, int second, int worst, double *current, double **points_arr, func cost_func)
+void update_simplex(int d, double *xisq_vec, int best, int second, int worst, double **points_arr, func cost_func)
 {
 	// Updates the simplex to the next generation
 	int i, j;
@@ -95,7 +95,7 @@ void update_simplex(int d, double *xisq_vec, int best, int second, int worst, do
 	for (i = 0; i < d; i++)
 	{
 		x_r[i] = 2.0*x_av[i] - x_w[i];
-		temp[i] = x_r[i] * current[i];
+		temp[i] = x_r[i];
 	}
 	xisq_r = cost_func(d, temp);
 
@@ -120,7 +120,7 @@ void update_simplex(int d, double *xisq_vec, int best, int second, int worst, do
 				for (i = 0; i < d; i++)
 				{
 					x_e[i] = 2.0 * x_r[i] - x_av[i];
-					temp[i] = x_e[i] * current[i];
+					temp[i] = x_e[i];
 				}
 				xisq_e = cost_func(d, temp);
 				if (xisq_e < xisq_vec[best])
@@ -151,7 +151,7 @@ void update_simplex(int d, double *xisq_vec, int best, int second, int worst, do
 			for (i = 0; i < d; i++)
 			{
 				x_new[i] = x_r[i] - 0.5 * (x_r[i] - x_av[i]);
-				temp[i] = x_new[i] * current[i];
+				temp[i] = x_new[i];
 			}
 			xisq_new = cost_func(d, temp);
 		}
@@ -169,7 +169,7 @@ void update_simplex(int d, double *xisq_vec, int best, int second, int worst, do
 		for (i = 0; i < d; i++)
 		{
 			x_c[i] = x_av[i] - 0.5*(x_av[i] + x_w[i]);
-			temp[i] = x_c[i] * current[i];
+			temp[i] = x_c[i];
 		}
 		xisq_c = cost_func(d, temp);
 		if (xisq_c < xisq_vec[worst])
@@ -194,7 +194,7 @@ void update_simplex(int d, double *xisq_vec, int best, int second, int worst, do
 					}
 				}
 			}
-			xisq(cost_func, d, points_arr, current, xisq_vec);
+			xisq(cost_func, d, points_arr, xisq_vec);
 		}
 	}
 
@@ -275,17 +275,17 @@ int run_simplex(int d, double* start_point, double* final_point, func cost_func,
 	
     // Issue: the initialisation is such that if any 
     // element of array is zero, it will remain zero
-	points_arr = init_simplex(d);
+	points_arr = init_simplex(d, current);
     
     // Ugly implementation: call to cost_func scattered around this file
-	xisq(cost_func, d, points_arr, current, xi2_arr);
+	xisq(cost_func, d, points_arr, xi2_arr);
 	compare(&best, &second, &worst, xi2_arr, d);
 
 
     // Run num_iter generations
 	for (i = 0; i < num_iter; i++)
 	{
-		update_simplex(d, xi2_arr, best, second, worst, current, points_arr, cost_func);
+		update_simplex(d, xi2_arr, best, second, worst, points_arr, cost_func);
 		compare(&best, &second, &worst, xi2_arr, d);
 		//if (i % 10 == 0) // Print after each generation
 		//{
@@ -294,7 +294,7 @@ int run_simplex(int d, double* start_point, double* final_point, func cost_func,
         //    // Print the best point
         //    for (int j = 0; j < d; j++)
         //    {
-        //        printf("%f\t", points_arr[best][j]*current[j]);
+        //        printf("%f\t", points_arr[best][j]);
         //    }
         //    printf("\n");
 		//}
@@ -302,7 +302,7 @@ int run_simplex(int d, double* start_point, double* final_point, func cost_func,
 
 	for (i = 0; i < d; i++)
 	{
-        final_point[i] = points_arr[best][i] * current[i];
+        final_point[i] = points_arr[best][i];
 	}
 	for (i = 0; i < d + 1; i++)
 	{
